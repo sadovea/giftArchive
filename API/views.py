@@ -1,3 +1,6 @@
+import stripe
+from django.views.decorators.csrf import csrf_exempt
+from rest_framework.decorators import api_view
 from rest_framework.utils import json
 from django.http import JsonResponse
 from .functions import process_gift_picking
@@ -109,6 +112,7 @@ def stripe_webhook_view(request):
     # Passed signature verification
     return HttpResponse(status=200)
 
+
 @api_view(['POST'])
 def load_choosed_gift(request):
     try:
@@ -116,10 +120,9 @@ def load_choosed_gift(request):
         choosed_gift_dict = json.loads(choosed_gift)
         is_bought = True
         is_selected = True
-        stored_gift = SelectedGift(choosed_gift_dict["name"], int(choosed_gift_dict["price"]), choosed_gift_dict["image_url"], choosed_gift_dict["link"], is_bought, is_selected)
+        stored_gift = SelectedGift(choosed_gift_dict["name"], int(choosed_gift_dict["price"]),
+                                   choosed_gift_dict["image_url"], choosed_gift_dict["link"], is_bought, is_selected)
         stored_gift.save()
         return JsonResponse(stored_gift, status=status.HTTP_200_OK, safe=False)
     except Exception as exeption:
         return JsonResponse({'error': str(exeption)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-

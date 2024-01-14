@@ -7,3 +7,4 @@ urlpatterns = [
     path('gift_consumption/', views.api_create_checkout_session),
     path('webhooks/stripe/', views.stripe_webhook_view, name='stripe-webhook'),
 ]
+
