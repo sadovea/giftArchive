@@ -1,14 +1,17 @@
+import logging
 import random
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from typing import List,Literal
+from typing import List, Literal
 
 from ebaysdk.finding import Connection as Finding
 from ebaysdk.exception import ConnectionError
 from pydantic import ValidationError
 from API.validators import RecommendedProduct
 from dataclasses import dataclass
+from typing import Optional, Dict, Union
 
-
+# Set up logging
+logging.basicConfig(level=logging.INFO)
 
 # dataclasses with slots=True, frozen=True, init=True are used because they are much more optimized than the usual classes
 #In our case, they are not yet variable, because they only accept data when created and do not need to be changed anymore, something like a tuple
@@ -63,8 +66,12 @@ categories = [
     Category("Tool box", 3, 100, 10, 1200, ["Handicraft"], 1, "any"),
     Category("DIY model", 3, 100, 11, 40, ["Handicraft", "homebody"], 0, "any"),
     Category("Needlework organizer", 3, 100, 4, 20, ["Handicraft"], 0, "any"),
-    Category("Cross-stitching set", 3, 100, 5, 20, ["Handicraft", "homebody"], 2, "any"),
-    Category("Diamond embroidery kit", 3, 100, 2, 30, ["Handicraft", "homebody"], 2, "any"),
+    Category(
+        "Cross-stitching set", 3, 100, 5, 20, ["Handicraft", "homebody"], 2, "any"
+    ),
+    Category(
+        "Diamond embroidery kit", 3, 100, 2, 30, ["Handicraft", "homebody"], 2, "any"
+    ),
     Category("Screwdriver", 3, 100, 2, 25, ["Handicraft"], 1, "any"),
     Category("Electrical screwdriver", 3, 100, 10, 45, ["Handicraft"], 1, "any"),
     Category("Travel bag", 3, 100, 5, 50, ["Tourism"], 0, "any"),
@@ -77,6 +84,19 @@ categories = [
     Category("Tourist backpack", 3, 100, 25, 100, ["Tourism"], 0, "any"),
     Category("Thermos", 3, 100, 10, 40, ["Tourism"], 0, "any"),
     Category("Tent", 3, 100, 50, 150, ["Tourism"], 0, "any"),
+]
+
+universal_categories = [
+    Category("Postcards", 0, 100, 0, 100, ["for_all_param"], 0, "any"),
+    Category("Postage stamp", 0, 100, 0, 100, ["for_all_param"], 0, "any"),
+    Category("Souvenirs", 0, 100, 0, 100, ["for_all_param"], 0, "any"),
+    Category("Chocolate", 0, 100, 0, 100, ["for_all_param"], 0, "any"),
+    Category("Cookies", 0, 100, 0, 100, ["for_all_param"], 0, "any"),
+    Category("Toys", 0, 100, 0, 100, ["for_all_param"], 0, "any"),
+    Category("Towels", 0, 100, 0, 100, ["for_all_param"], 0, "any"),
+    Category("Keychains", 0, 100, 0, 100, ["for_all_param"], 0, "any"),
+    Category("Cups", 0, 100, 0, 100, ["for_all_param"], 0, "any"),
+    Category("Books", 0, 100, 0, 100, ["for_all_param"], 0, "any"),
 ]
 
 def recommend_product_categories(questionnaire: dict) -> List[str]:
@@ -94,61 +114,80 @@ def recommend_product_categories(questionnaire: dict) -> List[str]:
     #Perhaps later we will change unsatisfactory products through pagination or in another way, and you will not even need to make slices
 
 
-    print(len(recommended_categories))
+
     if len(recommended_categories) == 10:
         return recommended_categories
-
+    # If there are not enough recommended categories, add random categories from
+    # universal_categories
     else:
         while len(recommended_categories) < 10:
-            random_category = random.choice(categories)
-
-            if random_category not in recommended_categories:
-                recommended_categories.append(random_category.name)
-
+            random_category = random.choice(universal_categories)
+            recommended_categories.append(random_category.name)
         return recommended_categories
 
 
 def get_right_thumb_size(url, new_thumb_size):
-    last_dot_index = url.rfind('.')
-    return url if last_dot_index < 1 else url[:last_dot_index - 3] + new_thumb_size + url[last_dot_index:]
-
+    last_dot_index = url.rfind(".")
+    return (
+        url
+        if last_dot_index < 1
+        else url[: last_dot_index - 3] + new_thumb_size + url[last_dot_index:]
+    )
 
 def create_ebay_api():
     try:
-        return Finding(domain='svcs.ebay.com', debug=False, appid='BillGen-Tobigift-PRD-c83448d6e-8a50c0ae',
-                       config_file=None, site_id='EBAY_US')
+        return Finding(
+            domain="svcs.ebay.com",
+            debug=False,
+            appid="BillGen-Tobigift-PRD-c83448d6e-8a50c0ae",
+            config_file=None,
+            site_id="EBAY_US",
+        )
     except ConnectionError as e:
-        print(f'ConnectionError while creating API connection: {e}')
+        print(f"ConnectionError while creating API connection: {e}")
         return None
 
 
 def get_gift_data_ebay(api, category, max_price):
-    request = {
-        'keywords': category,
-        'itemFilter': [{'name': 'MaxPrice', 'value': max_price}],
-        'outputSelector': ['SellerInfo', 'PictureURLSuperSize'],
-        'sortOrder': ['CurrentPriceHighest']
-    }
+    api, category: str, max_price: int, recursion_depth: int = 0
+    ) -> dict:
+    if recursion_depth == 2:
+        print(f"Recursion limit reached for category: {category}")
 
-    response_find = api.execute('findItemsAdvanced', request)
-
-    if response_find.reply.ack == 'Success':
-        search_result = response_find.reply.searchResult
-        if search_result._count == '0':
-            print(f'No items found for category: {category}')
-            return None
-
-        item_ebay = search_result.item[random.randint(0, int(search_result._count) - 1)]
-
-        return {
-            'name': item_ebay.title,
-            'price': str(item_ebay.sellingStatus.currentPrice.value),
-            'image_url': get_right_thumb_size(item_ebay.galleryURL, '500'),
-            'link': item_ebay.viewItemURL,
+    try:
+        request = {
+            "keywords": category,
+            "itemFilter": [
+                {"name": "MinPrice", "value": max_price * 0.8},
+                {"name": "MaxPrice", "value": max_price},
+            ],
+            "outputSelector": ["SellerInfo", "PictureURLSuperSize"],
+            "sortOrder": ["CurrentPriceHighest"],
         }
-    else:
-        print(f'Error response for category: {category}')
-        return None
+        response_find = api.execute("findItemsAdvanced", request)
+
+        if response_find.reply.ack == "Success":
+            search_result = response_find.reply.searchResult
+
+            if search_result._count == "0":
+                print(f"No products found for category: {category}")
+                return get_gift_data_ebay(
+                    api, category, max_price * 2, recursion_depth + 1
+                )
+
+            item_ebay = search_result.item[
+                random.randint(0, int(search_result._count) - 1)
+            ]
+            gift_data = {
+                "name": item_ebay.title,
+                "price": str(item_ebay.sellingStatus.currentPrice.value),
+                "image_url": get_right_thumb_size(item_ebay.galleryURL, "500"),
+                "link": item_ebay.viewItemURL,
+            }
+            return gift_data
+
+    except Exception as e:
+        print(f"Error: {e}")
 
 
 def get_list_product_data(recommended_categories: list, budget: int) -> list[dict]:
@@ -156,10 +195,17 @@ def get_list_product_data(recommended_categories: list, budget: int) -> list[dic
         api = create_ebay_api()
 
         if api:
-            futures = [executor.submit(get_gift_data_ebay, api, gift, budget) for gift in recommended_categories]
+            futures = [
+                executor.submit(get_gift_data_ebay, api, gift, budget)
+                for gift in recommended_categories
+            ]
 
             # Collect results as they become available
-            list_of_gifts_data = [future.result() for future in as_completed(futures) if future.result() is not None]
+            list_of_gifts_data = [
+                future.result()
+                for future in as_completed(futures)
+                if future.result() is not None
+            ]
 
             # Has to be checked/modified if suits to this func
             for gift in list_of_gifts_data:
