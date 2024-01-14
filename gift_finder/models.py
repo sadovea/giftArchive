@@ -12,3 +12,28 @@ class Product(models.Model):
     class Meta:
         verbose_name = 'Товар'
         verbose_name_plural = 'Товари'
+
+"""Model for saving selected gifts"""
+
+
+class SelectedGift(models.Model):
+    created_at = models.DateTimeField(auto_now_add=True)
+    name = models.CharField(max_length=255)
+    price = models.CharField(max_length=30)
+    image_url = models.TextField(help_text="URL of the image for the gift.")
+    link = models.TextField(help_text="URL to purchase the gift.")
+    is_bought = models.BooleanField(default=False)
+    is_selected = models.BooleanField(default=False)
+    is_delivered = models.BooleanField(default=False)
+    # user = models.ForeignKey(
+    #     settings.AUTH_USER_MODEL,
+    #     on_delete=models.CASCADE
+    # )
+
+    """Sorting selected gifts from newest to oldest"""
+    class Meta:
+        ordering = ["-created_at"]
+        verbose_name_plural = "selected_gifts"
+
+    def __str__(self):
+        return str(self.created_at)
