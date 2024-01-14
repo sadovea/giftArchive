@@ -23,6 +23,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = "django-insecure-i2i1n8c*=!y8&5laf&go$j@_hpfxtj_gx%!b$^*7s0x)$!1^_u"
 
+
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
@@ -158,3 +159,7 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'static_root')
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+STRIPE_PUBLIC_KEY = 'pk_test_51OV2bLAKPDAd55L4octtecddPTj4ZGloLsn0HJHGjtO0Kw0sQDVyWcBqtvUjfBZS3mxTD3GyxY1PLVGtUNvWXgwv008o55BXYi'
+STRIPE_SECRET_KEY = 'sk_test_51OV2bLAKPDAd55L4BArn0weu8mSzYuU1YhpfwKoiS6PNy81LVG3Ip7i8Z2UXCrwSv7FkO8oYkMavSRBDSy76MSaj00rq1ksN96'
+STRIPE_WEBHOOK_SECRET = 'whsec_42d19db89b86214a25bcf3a5857ea8cc52595c7ec1cf4e4f5669e08960bffb87'
