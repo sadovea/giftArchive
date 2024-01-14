@@ -120,9 +120,14 @@ def load_choosed_gift(request):
         choosed_gift_dict = json.loads(choosed_gift)
         is_bought = True
         is_selected = True
-        stored_gift = SelectedGift(choosed_gift_dict["name"], int(choosed_gift_dict["price"]),
+        try:
+            stored_gift = SelectedGift(choosed_gift_dict["name"], int(choosed_gift_dict["price"]),
                                    choosed_gift_dict["image_url"], choosed_gift_dict["link"], is_bought, is_selected)
-        stored_gift.save()
-        return JsonResponse(stored_gift, status=status.HTTP_200_OK, safe=False)
-    except Exception as exeption:
-        return JsonResponse({'error': str(exeption)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            stored_gift.save()
+            return JsonResponse(stored_gift, status=status.HTTP_200_OK, safe=False)
+        except ValidationError as e:
+            print("Validation error:", e)
+            return JsonResponse({'Validation error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
