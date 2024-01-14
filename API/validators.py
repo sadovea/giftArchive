@@ -32,3 +32,4 @@ class RecommendedProduct(BaseModel):
     price: str
     image_url: str
     link: str
+
