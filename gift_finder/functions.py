@@ -148,46 +148,46 @@ def create_ebay_api():
         return None
 
 
-def get_gift_data_ebay(api, category, max_price):
+def get_gift_data_ebay(
     api, category: str, max_price: int, recursion_depth: int = 0
-    ) -> dict:
-    if recursion_depth == 2:
-        print(f"Recursion limit reached for category: {category}")
+    )-> dict:
+        if recursion_depth == 2:
+            print(f"Recursion limit reached for category: {category}")
 
-    try:
-        request = {
-            "keywords": category,
-            "itemFilter": [
+        try:
+            request = {
+                "keywords": category,
+                "itemFilter": [
                 {"name": "MinPrice", "value": max_price * 0.8},
                 {"name": "MaxPrice", "value": max_price},
             ],
             "outputSelector": ["SellerInfo", "PictureURLSuperSize"],
             "sortOrder": ["CurrentPriceHighest"],
-        }
-        response_find = api.execute("findItemsAdvanced", request)
+            }
+            response_find = api.execute("findItemsAdvanced", request)
 
-        if response_find.reply.ack == "Success":
-            search_result = response_find.reply.searchResult
+            if response_find.reply.ack == "Success":
+                search_result = response_find.reply.searchResult
 
-            if search_result._count == "0":
-                print(f"No products found for category: {category}")
-                return get_gift_data_ebay(
-                    api, category, max_price * 2, recursion_depth + 1
+                if search_result._count == "0":
+                    print(f"No products found for category: {category}")
+                    return get_gift_data_ebay(
+                        api, category, max_price * 2, recursion_depth + 1
                 )
 
-            item_ebay = search_result.item[
-                random.randint(0, int(search_result._count) - 1)
-            ]
-            gift_data = {
-                "name": item_ebay.title,
-                "price": str(item_ebay.sellingStatus.currentPrice.value),
-                "image_url": get_right_thumb_size(item_ebay.galleryURL, "500"),
-                "link": item_ebay.viewItemURL,
-            }
-            return gift_data
+                item_ebay = search_result.item[
+                    random.randint(0, int(search_result._count) - 1)
+                ]
+                gift_data = {
+                    "name": item_ebay.title,
+                    "price": str(item_ebay.sellingStatus.currentPrice.value),
+                    "image_url": get_right_thumb_size(item_ebay.galleryURL, "500"),
+                    "link": item_ebay.viewItemURL,
+                }
+                return gift_data
 
-    except Exception as e:
-        print(f"Error: {e}")
+        except Exception as e:
+            print(f"Error: {e}")
 
 
 def get_list_product_data(recommended_categories: list, budget: int) -> list[dict]:
